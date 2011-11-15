@@ -5,29 +5,36 @@
 //  Copyright (c) 2011 Pandamonia LLC. All rights reserved.
 //
 
-#import <libkern/OSAtomic.h>
+#import <pthread.h>
 #import "A2StoryboardSegueContext.h"
 
 static id aContext;
-static OSSpinLock lock = OS_SPINLOCK_INIT;
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 static void *kContextKey;
+
+@interface UIStoryboardSegue ()
+
+- (id) a2_initWithIdentifier: (NSString *) identifier source: (UIViewController *) source destination: (UIViewController *) destination __attribute__((objc_method_family(init)));
+
+@end
 
 @implementation UIStoryboardSegue (A2StoryboardSegueContext)
 
 - (id) a2_initWithIdentifier: (NSString *) identifier source: (UIViewController *) source destination: (UIViewController *) destination
 {
-	id segue = [self a2_initWithIdentifier: identifier source: source destination: destination];
-	
-	if (aContext)
+	if ((self = [self a2_initWithIdentifier: identifier source: source destination: destination]))
 	{
-		objc_setAssociatedObject(self, &kContextKey, aContext, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-		aContext = nil;
-		
-		// Unlock now
-		OSSpinLockUnlock(&lock);
+		if (aContext)
+		{
+			objc_setAssociatedObject(self, &kContextKey, aContext, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+			aContext = nil;
+			
+			// Unlock now
+			pthread_mutex_unlock(&mtx);
+		}
 	}
 	
-	return segue;
+	return self;
 }
 - (id) context
 {
@@ -55,7 +62,7 @@ static void *kContextKey;
 - (void) performSegueWithIdentifier: (NSString *) identifier sender: (id) sender context: (id) context
 {
 	// Lock the until we unlock above.
-	OSSpinLockLock(&lock);
+	pthread_mutex_lock(&mtx);
 	aContext = context;
 	
 	[self performSegueWithIdentifier: identifier sender: sender];
