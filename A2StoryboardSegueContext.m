@@ -5,12 +5,13 @@
 //  Copyright (c) 2011 Pandamonia LLC. All rights reserved.
 //
 
+#import <objc/runtime.h>
 #import <pthread.h>
 #import "A2StoryboardSegueContext.h"
 
-static id aContext;
+static id _context;
 static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-static void *kContextKey;
+static void *A2StoryboardSegueContextKey;
 
 @interface UIStoryboardSegue ()
 
@@ -24,10 +25,10 @@ static void *kContextKey;
 {
 	if ((self = [self a2_initWithIdentifier: identifier source: source destination: destination]))
 	{
-		if (aContext)
+		if (_context)
 		{
-			objc_setAssociatedObject(self, &kContextKey, aContext, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-			aContext = nil;
+			objc_setAssociatedObject(self, &A2StoryboardSegueContextKey, _context, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+			_context = nil;
 			
 			// Unlock now
 			pthread_mutex_unlock(&mtx);
@@ -38,7 +39,7 @@ static void *kContextKey;
 }
 - (id) context
 {
-	return objc_getAssociatedObject(self, &kContextKey);
+	return objc_getAssociatedObject(self, &A2StoryboardSegueContextKey);
 }
 
 + (void) load
@@ -63,7 +64,7 @@ static void *kContextKey;
 {
 	// Lock the until we unlock above.
 	pthread_mutex_lock(&mtx);
-	aContext = context;
+	_context = context;
 	
 	[self performSegueWithIdentifier: identifier sender: sender];
 }
