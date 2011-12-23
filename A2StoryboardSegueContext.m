@@ -13,7 +13,7 @@ static id _context;
 static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 static void *A2StoryboardSegueContextKey;
 
-@interface UIStoryboardSegue ()
+@interface UIStoryboardSegue (A2StoryboardSegueContextPrivate)
 
 - (id) a2_initWithIdentifier: (NSString *) identifier source: (UIViewController *) source destination: (UIViewController *) destination __attribute__((objc_method_family(init)));
 
