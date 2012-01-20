@@ -62,6 +62,8 @@ static void *A2StoryboardSegueContextKey;
 
 - (void) performSegueWithIdentifier: (NSString *) identifier sender: (id) sender context: (id) context
 {
+	if (!context) return [self performSegueWithIdentifier: identifier sender: sender];
+
 	// Lock the until we unlock above.
 	pthread_mutex_lock(&mtx);
 	_context = context;
